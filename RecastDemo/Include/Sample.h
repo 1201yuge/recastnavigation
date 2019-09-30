@@ -106,6 +106,7 @@ protected:
 
 	unsigned char m_navMeshDrawFlags;
 
+	// 此处定义Navigation的相关参数
 	float m_cellSize;
 	float m_cellHeight;
 	float m_agentHeight;
