@@ -421,7 +421,7 @@ static bool isectSegAABB(const float* sp, const float* sq,
 	return true;
 }
 
-
+// ÉäÏß¼ì²âº¯Êı.
 bool InputGeom::raycastMesh(float* src, float* dst, float& tmin)
 {
 	float dir[3];

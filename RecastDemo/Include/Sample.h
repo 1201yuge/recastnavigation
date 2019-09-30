@@ -99,6 +99,8 @@ struct SampleToolState {
 class Sample
 {
 protected:
+
+	// 寻路相关的实例引用.
 	class InputGeom* m_geom;
 	class dtNavMesh* m_navMesh;
 	class dtNavMeshQuery* m_navQuery;
@@ -126,6 +128,7 @@ protected:
 	bool m_filterLedgeSpans;
 	bool m_filterWalkableLowHeightSpans;
 	
+	// Demo编辑界面相关
 	SampleTool* m_tool;
 	SampleToolState* m_toolStates[MAX_TOOLS];
 	
@@ -148,6 +151,7 @@ public:
 
 	SampleDebugDraw& getDebugDraw() { return m_dd; }
 
+	// Demo界面的各种回调函数
 	virtual void handleSettings();
 	virtual void handleTools();
 	virtual void handleDebugMode();
@@ -160,7 +164,8 @@ public:
 	virtual bool handleBuild();
 	virtual void handleUpdate(const float dt);
 	virtual void collectSettings(struct BuildSettings& settings);
-
+	
+	// 相关属性、设置获取接口
 	virtual class InputGeom* getInputGeom() { return m_geom; }
 	virtual class dtNavMesh* getNavMesh() { return m_navMesh; }
 	virtual class dtNavMeshQuery* getNavMeshQuery() { return m_navQuery; }
@@ -172,6 +177,7 @@ public:
 	unsigned char getNavMeshDrawFlags() const { return m_navMeshDrawFlags; }
 	void setNavMeshDrawFlags(unsigned char flags) { m_navMeshDrawFlags = flags; }
 
+	// 状态相关接口.
 	void updateToolStates(const float dt);
 	void initToolStates(Sample* sample);
 	void resetToolStates();

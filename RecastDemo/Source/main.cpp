@@ -78,6 +78,7 @@ int main(int /*argc*/, char** /*argv*/)
 		return -1;
 	}
 
+	//*** SDL窗口初始化 Start... ***//
 	// Enable depth buffer.
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
@@ -133,6 +134,9 @@ int main(int /*argc*/, char** /*argv*/)
 		return -1;
 	}
 	
+	//*** SDL窗口初始化 End! ***//
+
+	//*** SDL窗口状态变量 Start... ***//
 	float t = 0.0f;
 	float timeAcc = 0.0f;
 	Uint32 prevFrameTime = SDL_GetTicks();
@@ -174,11 +178,13 @@ int main(int /*argc*/, char** /*argv*/)
 	float markerPosition[3] = {0, 0, 0};
 	bool markerPositionSet = false;
 	
-	InputGeom* geom = 0;
-	Sample* sample = 0;
+	//*** SDL窗口状态变量 End. ***//
+
+	InputGeom* geom = 0;   // 输入的网格数据
+	Sample* sample = 0;    // Demo实例指针
 
 	const string testCasesFolder = "TestCases";
-	TestCase* test = 0;
+	TestCase* test = 0;    // 测试样例
 
 	BuildContext ctx;
 	
@@ -202,6 +208,7 @@ int main(int /*argc*/, char** /*argv*/)
 		bool processHitTestShift = false;
 		SDL_Event event;
 		
+		// 窗口事件检测，包括鼠标、键盘的输入事件.
 		while (SDL_PollEvent(&event))
 		{
 			switch (event.type)
@@ -210,10 +217,12 @@ int main(int /*argc*/, char** /*argv*/)
 					// Handle any key presses here.
 					if (event.key.keysym.sym == SDLK_ESCAPE)
 					{
+						// ESC 退出软件
 						done = true;
 					}
 					else if (event.key.keysym.sym == SDLK_t)
 					{
+						// 测试TestCases文件夹底下的那几个文件.
 						showLevels = false;
 						showSample = false;
 						showTestCases = true;
@@ -221,15 +230,18 @@ int main(int /*argc*/, char** /*argv*/)
 					}
 					else if (event.key.keysym.sym == SDLK_TAB)
 					{
+						// 隐藏显示菜单栏
 						showMenu = !showMenu;
 					}
 					else if (event.key.keysym.sym == SDLK_SPACE)
 					{
+						// 从起点步进反白到终点
 						if (sample)
 							sample->handleToggle();
 					}
 					else if (event.key.keysym.sym == SDLK_1)
 					{
+						// 步进(似乎都没有实现相关的函数)
 						if (sample)
 							sample->handleStep();
 					}
@@ -355,7 +367,7 @@ int main(int /*argc*/, char** /*argv*/)
 		
 		t += dt;
 
-		// Hit test mesh.
+		// Hit test mesh. 鼠标点击碰撞检测
 		if (processHitTest && geom && sample)
 		{
 			float hitTime;
@@ -390,7 +402,7 @@ int main(int /*argc*/, char** /*argv*/)
 			}
 		}
 		
-		// Update sample simulation.
+		// Update sample simulation.(按照指定的帧率更新Sample)
 		const float SIM_RATE = 20;
 		const float DELTA_TIME = 1.0f / SIM_RATE;
 		timeAcc = rcClamp(timeAcc + dt, -1.0f, 1.0f);
@@ -405,7 +417,7 @@ int main(int /*argc*/, char** /*argv*/)
 			simIter++;
 		}
 
-		// Clamp the framerate so that we do not hog all the CPU.
+		// Clamp the framerate so that we do not hog all the CPU. (控制整个Wihle循环的刷新速度)
 		const float MIN_FRAME_TIME = 1.0f / 40.0f;
 		if (dt < MIN_FRAME_TIME)
 		{
@@ -414,6 +426,8 @@ int main(int /*argc*/, char** /*argv*/)
 			if (ms >= 0) SDL_Delay(ms);
 		}
 		
+		//*** 更新相机以及重新绘制场景 Start... ***//
+
 		// Set the viewport.
 		glViewport(0, 0, width, height);
 		GLint viewport[4];
@@ -504,12 +518,16 @@ int main(int /*argc*/, char** /*argv*/)
 		
 		imguiBeginFrame(mousePos[0], mousePos[1], mouseButtonMask, mouseScroll);
 		
+		//*** 更新相机以及重新绘制场景 End. ***//
+
 		if (sample)
 		{
+			// 绘制鼠标选取的导航起点和终点
 			sample->handleRenderOverlay((double*)projectionMatrix, (double*)modelviewMatrix, (int*)viewport);
 		}
 		if (test)
 		{
+			// 绘制自动测试结果的相关信息
 			if (test->handleRenderOverlay((double*)projectionMatrix, (double*)modelviewMatrix, (int*)viewport))
 				mouseOverMenu = true;
 		}
