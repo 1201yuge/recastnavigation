@@ -89,7 +89,7 @@ static bool addSpan(rcHeightfield& hf, const int x, const int y,
 	
 	int idx = x + y*hf.width;
 	
-	rcSpan* s = allocSpan(hf);
+	rcSpan* s = allocSpan(hf); // 从对象池分配
 	if (!s)
 		return false;
 	s->smin = smin;
@@ -107,8 +107,10 @@ static bool addSpan(rcHeightfield& hf, const int x, const int y,
 	rcSpan* cur = hf.spans[idx];
 	
 	// Insert and merge spans.
+	// 其过程类似于数字降序排列
 	while (cur)
 	{
+		// 遍历当前列表
 		if (cur->smin > s->smax)
 		{
 			// Current span is further than the new span, break.
@@ -117,11 +119,13 @@ static bool addSpan(rcHeightfield& hf, const int x, const int y,
 		else if (cur->smax < s->smin)
 		{
 			// Current span is before the new span advance.
+			// 比cur大，prev = cur，继续循环
 			prev = cur;
 			cur = cur->next;
 		}
 		else
 		{
+			// s和cur相交，合并
 			// Merge spans.
 			if (cur->smin < s->smin)
 				s->smin = cur->smin;
@@ -130,14 +134,20 @@ static bool addSpan(rcHeightfield& hf, const int x, const int y,
 			
 			// Merge flags.
 			if (rcAbs((int)s->smax - (int)cur->smax) <= flagMergeThr)
+				// 如果两个实心柱顶部距离小于最大爬坡高度，则传染可行走标记
+                // 可行走为63，不可为0
 				s->area = rcMax(s->area, cur->area);
 			
 			// Remove current span.
+			// 为什么是remove current？因为s合并后可以继续合并，循环还要继续
+			// 直到循环跳出重新插入s
 			rcSpan* next = cur->next;
 			freeSpan(hf, cur);
 			if (prev)
+				// cur不是链表头，prev->next 指向cur->next
 				prev->next = next;
 			else
+				// cur是链表头，头指针指向cur->next
 				hf.spans[idx] = next;
 			cur = next;
 		}
@@ -146,11 +156,13 @@ static bool addSpan(rcHeightfield& hf, const int x, const int y,
 	// Insert new span.
 	if (prev)
 	{
+		// 找到链表的合适位置，插到prev后面
 		s->next = prev->next;
 		prev->next = s;
 	}
 	else
 	{
+		// 找到链表头，插入头部
 		s->next = hf.spans[idx];
 		hf.spans[idx] = s;
 	}
@@ -276,6 +288,8 @@ static bool rasterizeTri(const float* v0, const float* v1, const float* v2,
 	rcVcopy(&in[2*3], v2);
 	int nvrow, nvIn = 3;
 	
+	// 注意：y0 = y0 = (int)((tmin[2] - bmin[2])*ics)
+	// 所以是沿z轴方向的上的切片
 	for (int y = y0; y <= y1; ++y)
 	{
 		// Clip polygon to row. Store the remaining polygon as well
@@ -298,6 +312,7 @@ static bool rasterizeTri(const float* v0, const float* v1, const float* v2,
 
 		int nv, nv2 = nvrow;
 
+		// 在沿x轴方向的上的切片
 		for (int x = x0; x <= x1; ++x)
 		{
 			// Clip polygon to column. store the remaining polygon as well
@@ -376,10 +391,11 @@ bool rcRasterizeTriangles(rcContext* ctx, const float* verts, const int /*nv*/,
 	// Rasterize triangles.
 	for (int i = 0; i < nt; ++i)
 	{
+		// 读取三角面片的顶点
 		const float* v0 = &verts[tris[i*3+0]*3];
 		const float* v1 = &verts[tris[i*3+1]*3];
 		const float* v2 = &verts[tris[i*3+2]*3];
-		// Rasterize.
+		// Rasterize. 光栅化处理
 		if (!rasterizeTri(v0, v1, v2, areas[i], solid, solid.bmin, solid.bmax, solid.cs, ics, ich, flagMergeThr))
 		{
 			ctx->log(RC_LOG_ERROR, "rcRasterizeTriangles: Out of memory.");

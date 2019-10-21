@@ -36,6 +36,7 @@
 /// @see rcCompactHeightfield, rcBuildCompactHeightfield, rcConfig::walkableRadius
 bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 {
+	// 根绝角色的半径，剔除不可走的边缘地带.
 	rcAssert(ctx);
 	
 	const int w = chf.width;

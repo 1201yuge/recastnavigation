@@ -1253,6 +1253,9 @@ static bool mergeAndFilterLayerRegions(rcContext* ctx, int minRegionArea,
 /// @see rcCompactHeightfield, rcBuildRegions, rcBuildRegionsMonotone
 bool rcBuildDistanceField(rcContext* ctx, rcCompactHeightfield& chf)
 {
+	// 其代码基本和rcErodeWalkableArea中求得dist过程一样，就不再赘述。
+	// 但对于结果，额外进行了一次boxBlur操作，如果熟悉渲染一眼就能理解。
+	// 其中变量src是上一步计算的原始dist数组，dst是blur后存放的数组。
 	rcAssert(ctx);
 	
 	rcScopedTimer timer(ctx, RC_TIMER_BUILD_DISTANCEFIELD);

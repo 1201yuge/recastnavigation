@@ -339,6 +339,7 @@ void rcMarkWalkableTriangles(rcContext* ctx, const float walkableSlopeAngle,
 	rcIgnoreUnused(ctx);
 	rcIgnoreUnused(nv);
 	
+	// walkableSlopeAngle计算最大爬坡角度对应的cos值
 	const float walkableThr = cosf(walkableSlopeAngle/180.0f*RC_PI);
 
 	float norm[3];
@@ -348,7 +349,7 @@ void rcMarkWalkableTriangles(rcContext* ctx, const float walkableSlopeAngle,
 		const int* tri = &tris[i*3];
 		calcTriNormal(&verts[tri[0]*3], &verts[tri[1]*3], &verts[tri[2]*3], norm);
 		// Check if the face is walkable.
-		if (norm[1] > walkableThr)
+		if (norm[1] > walkableThr) // 发现y值是否大于walkalbleThr
 			areas[i] = RC_WALKABLE_AREA;
 	}
 }

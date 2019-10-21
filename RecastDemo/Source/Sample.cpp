@@ -126,8 +126,10 @@ void Sample::handleRenderOverlay(double* /*proj*/, double* /*model*/, int* /*vie
 
 void Sample::handleMeshChanged(InputGeom* geom)
 {
+	// 得到 InputGeom geom的引用.
 	m_geom = geom;
 
+	// 获取构建参数
 	const BuildSettings* buildSettings = geom->getBuildSettings();
 	if (buildSettings)
 	{

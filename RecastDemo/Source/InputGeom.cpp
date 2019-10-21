@@ -126,6 +126,7 @@ bool InputGeom::loadMesh(rcContext* ctx, const std::string& filepath)
 {
 	if (m_mesh)
 	{
+		// 删除旧数据
 		delete m_chunkyMesh;
 		m_chunkyMesh = 0;
 		delete m_mesh;
@@ -146,8 +147,10 @@ bool InputGeom::loadMesh(rcContext* ctx, const std::string& filepath)
 		return false;
 	}
 
+	// 遍历所有顶点，分别取x,y,z最大最小值，分别存入包围盒最小xyz顶点 geom.m_meshBMin，最大xyz顶点geom.m_meshBMax
 	rcCalcBounds(m_mesh->getVerts(), m_mesh->getVertCount(), m_meshBMin, m_meshBMax);
 
+	// ...生成m_chunkyMesh。Sample_SoloMesh不使用，暂时省略。
 	m_chunkyMesh = new rcChunkyTriMesh;
 	if (!m_chunkyMesh)
 	{
@@ -301,15 +304,15 @@ bool InputGeom::load(rcContext* ctx, const std::string& filepath)
 {
 	size_t extensionPos = filepath.find_last_of('.');
 	if (extensionPos == std::string::npos)
-		return false;
+		return false; // 没有拓展名,则直接返回
 
-	std::string extension = filepath.substr(extensionPos);
-	std::transform(extension.begin(), extension.end(), extension.begin(), tolower);
+	std::string extension = filepath.substr(extensionPos);  // 取拓展名
+	std::transform(extension.begin(), extension.end(), extension.begin(), tolower);  // 转小写
 
 	if (extension == ".gset")
 		return loadGeomSet(ctx, filepath);
 	if (extension == ".obj")
-		return loadMesh(ctx, filepath);
+		return loadMesh(ctx, filepath);   // 取数据
 
 	return false;
 }

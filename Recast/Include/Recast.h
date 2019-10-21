@@ -293,6 +293,10 @@ struct rcSpanPool
 /// @ingroup recast
 struct rcHeightfield
 {
+	// 原注释已经非常详尽，前面6项是高度场的空间结构（备注：第二个变量，使用depth可能更严谨，但源码中在不少二维的情况下，
+	// 对于xz平面使用了x、y和width、height作为变量名，这也是描述二维情况常用的，只是在阅读过程中，可能带来一定误解），
+	// 后面两项是实心柱rcSpan对象池，用于构建过程中减少内存分配。中间的spans即前文提到的实心柱链表结构，也是核心数据，
+	// 注释中可以看到，其大小为width*height。每一项包含了该坐标处实心柱rcSpan对象链表。
 	rcHeightfield();
 	~rcHeightfield();
 

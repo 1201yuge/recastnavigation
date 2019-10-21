@@ -42,6 +42,7 @@ rcMeshLoaderObj::~rcMeshLoaderObj()
 		
 void rcMeshLoaderObj::addVertex(float x, float y, float z, int& cap)
 {
+	// 内存分配
 	if (m_vertCount+1 > cap)
 	{
 		cap = !cap ? 8 : cap*2;
@@ -51,6 +52,7 @@ void rcMeshLoaderObj::addVertex(float x, float y, float z, int& cap)
 		delete [] m_verts;
 		m_verts = nv;
 	}
+	// 存入顶点数据
 	float* dst = &m_verts[m_vertCount*3];
 	*dst++ = x*m_scale;
 	*dst++ = y*m_scale;
@@ -60,6 +62,7 @@ void rcMeshLoaderObj::addVertex(float x, float y, float z, int& cap)
 
 void rcMeshLoaderObj::addTriangle(int a, int b, int c, int& cap)
 {
+	// 内存分配
 	if (m_triCount+1 > cap)
 	{
 		cap = !cap ? 8 : cap*2;
@@ -69,6 +72,7 @@ void rcMeshLoaderObj::addTriangle(int a, int b, int c, int& cap)
 		delete [] m_tris;
 		m_tris = nv;
 	}
+	// 存入三角面片数据
 	int* dst = &m_tris[m_triCount*3];
 	*dst++ = a;
 	*dst++ = b;
@@ -138,6 +142,7 @@ static int parseFace(char* row, int* data, int n, int vcnt)
 
 bool rcMeshLoaderObj::load(const std::string& filename)
 {
+	// 检查文件
 	char* buf = 0;
 	FILE* fp = fopen(filename.c_str(), "rb");
 	if (!fp)
@@ -164,6 +169,8 @@ bool rcMeshLoaderObj::load(const std::string& filename)
 		fclose(fp);
 		return false;
 	}
+
+	// 读文件
 	size_t readLen = fread(buf, bufSize, 1, fp);
 	fclose(fp);
 
@@ -182,6 +189,7 @@ bool rcMeshLoaderObj::load(const std::string& filename)
 	int vcap = 0;
 	int tcap = 0;
 	
+	// 循环读每一行，v开头addVertex，f开头addTriangle
 	while (src < srcEnd)
 	{
 		// Parse one row
@@ -213,7 +221,7 @@ bool rcMeshLoaderObj::load(const std::string& filename)
 
 	delete [] buf;
 
-	// Calculate normals.
+	// Calculate normals.后面又自己算normal，并没有用这里的，跳过。
 	m_normals = new float[m_triCount*3];
 	for (int i = 0; i < m_triCount*3; i += 3)
 	{

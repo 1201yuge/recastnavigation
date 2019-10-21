@@ -42,6 +42,7 @@ void rcFilterLowHangingWalkableObstacles(rcContext* ctx, const int walkableClimb
 	const int w = solid.width;
 	const int h = solid.height;
 	
+	// 这里的y、h、height等实际上对应3维空间的z和depth
 	for (int y = 0; y < h; ++y)
 	{
 		for (int x = 0; x < w; ++x)

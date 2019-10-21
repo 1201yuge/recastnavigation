@@ -172,7 +172,7 @@ int main(int /*argc*/, char** /*argv*/)
 	string sampleName = "Choose Sample...";
 	
 	vector<string> files;
-	const string meshesFolder = "Meshes";
+	const string meshesFolder = "Meshes";  // 模型文件的相对路径
 	string meshName = "Choose Mesh...";
 	
 	float markerPosition[3] = {0, 0, 0};
@@ -551,7 +551,7 @@ int main(int /*argc*/, char** /*argv*/)
 
 			imguiSeparator();
 			imguiLabel("Sample");
-			if (imguiButton(sampleName.c_str()))
+			if (imguiButton(sampleName.c_str())) // 选择样例
 			{
 				if (showSample)
 				{
@@ -567,7 +567,7 @@ int main(int /*argc*/, char** /*argv*/)
 			
 			imguiSeparator();
 			imguiLabel("Input Mesh");
-			if (imguiButton(meshName.c_str()))
+			if (imguiButton(meshName.c_str())) // 选择mesh
 			{
 				if (showLevels)
 				{
@@ -598,10 +598,10 @@ int main(int /*argc*/, char** /*argv*/)
 				
 				sample->handleSettings();
 
-				if (imguiButton("Build"))
+				if (imguiButton("Build"))  // 编译生成
 				{
 					ctx.resetLog();
-					if (!sample->handleBuild())
+					if (!sample->handleBuild())  // 关键入口!!!
 					{
 						showLog = true;
 						logScroll = 0;
@@ -625,9 +625,10 @@ int main(int /*argc*/, char** /*argv*/)
 			imguiEndScrollArea();
 		}
 		
-		// Sample selection dialog.
+		// Sample selection dialog. 样例选择面板
 		if (showSample)
 		{
+			// 显示choose sample列表
 			static int levelScroll = 0;
 			if (imguiBeginScrollArea("Choose Sample", width-10-250-10-200, height-10-250, 200, 250, &levelScroll))
 				mouseOverMenu = true;
@@ -637,7 +638,7 @@ int main(int /*argc*/, char** /*argv*/)
 			{
 				if (imguiItem(g_samples[i].name.c_str()))
 				{
-					newSample = g_samples[i].create();
+					newSample = g_samples[i].create(); // 这里是点击选中响应代码，会创建对应的Sample，在上下文中是Sample_SoloMesh
 					if (newSample)
 						sampleName = g_samples[i].name;
 				}
@@ -646,8 +647,8 @@ int main(int /*argc*/, char** /*argv*/)
 			{
 				delete sample;
 				sample = newSample;
-				sample->setContext(&ctx);
-				if (geom)
+				sample->setContext(&ctx); // m_ctx = ctx，ctx是个全局上下文环境，主要用于计时、Log等。
+				if (geom) // geom是模型数据，在选择模型之后切换Sample方式才会进入这里
 				{
 					sample->handleMeshChanged(geom);
 				}
@@ -656,6 +657,10 @@ int main(int /*argc*/, char** /*argv*/)
 
 			if (geom || sample)
 			{
+				//...做一些编辑器的更新工作
+				//...计算相机位置，由于这个函数循环在跑，所以如果showSample是True的时候相机会被无限拉回
+				//...设置GL_FOG_START和GL_FOG_END
+
 				const float* bmin = 0;
 				const float* bmax = 0;
 				if (geom)
@@ -683,7 +688,7 @@ int main(int /*argc*/, char** /*argv*/)
 			imguiEndScrollArea();
 		}
 		
-		// Level selection dialog.
+		// Level selection dialog. 选择并导入Mesh数据
 		if (showLevels)
 		{
 			static int levelScroll = 0;
@@ -693,10 +698,12 @@ int main(int /*argc*/, char** /*argv*/)
 			vector<string>::const_iterator fileIter = files.begin();
 			vector<string>::const_iterator filesEnd = files.end();
 			vector<string>::const_iterator levelToLoad = filesEnd;
+			// 遍历meshesFolder下所有.obj或者.gset文件
 			for (; fileIter != filesEnd; ++fileIter)
 			{
 				if (imguiItem(fileIter->c_str()))
 				{
+					// GUI响应代码，levelToLoad即选中的模型名，这里上下文是nav_test.obj
 					levelToLoad = fileIter;
 				}
 			}
@@ -712,7 +719,7 @@ int main(int /*argc*/, char** /*argv*/)
 				string path = meshesFolder + "/" + meshName;
 				
 				geom = new InputGeom;
-				if (!geom->load(&ctx, path))
+				if (!geom->load(&ctx, path)) //!!!关键：文件名与MeshesFolder组成Path，传递给InputGeom对象的load方法!!!
 				{
 					delete geom;
 					geom = 0;
@@ -730,11 +737,12 @@ int main(int /*argc*/, char** /*argv*/)
 				}
 				if (sample && geom)
 				{
-					sample->handleMeshChanged(geom);
+					sample->handleMeshChanged(geom); // 如果有sample，sample.m_mesh = geom
 				}
 
 				if (geom || sample)
 				{
+					// 相机更新
 					const float* bmin = 0;
 					const float* bmax = 0;
 					if (geom)
