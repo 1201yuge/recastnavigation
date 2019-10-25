@@ -388,8 +388,10 @@ bool Sample_SoloMesh::handleBuild()
 	
 	//
 	// Step 1. Initialize build config.
+	// 步骤一：初始化参数.
 	//
 	
+	// 这边的数据在sample::handleMeshChanged(geom)的时候已经完成了初始化(即从设置面板将数据搬了进来.)
 	// Init build configuration from GUI
 	memset(&m_cfg, 0, sizeof(m_cfg));
 	m_cfg.cs = m_cellSize;
@@ -411,7 +413,7 @@ bool Sample_SoloMesh::handleBuild()
 	// area could be specified by an user defined box, etc.
 	rcVcopy(m_cfg.bmin, bmin);
 	rcVcopy(m_cfg.bmax, bmax);
-	rcCalcGridSize(m_cfg.bmin, m_cfg.bmax, m_cfg.cs, &m_cfg.width, &m_cfg.height);  // 计算所需要的cell(体素)数量
+	rcCalcGridSize(m_cfg.bmin, m_cfg.bmax, m_cfg.cs, &m_cfg.width, &m_cfg.height);  // 计算所需要的grid数量(即heightfield的底座grid数量)
 
 	// Reset build times gathering.
 	m_ctx->resetTimers();
@@ -425,6 +427,7 @@ bool Sample_SoloMesh::handleBuild()
 	
 	//
 	// Step 2. Rasterize input polygon soup.
+	// 步骤二：光栅化输入的三角面片.
 	//
 	
 	// Allocate voxel heightfield where we rasterize our input data to.
@@ -434,7 +437,7 @@ bool Sample_SoloMesh::handleBuild()
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Out of memory 'solid'.");
 		return false;
 	}
-	// 为geom.solid.spans分配了width*height*sizeof(rcSpan)的空间，并从geom传入了前6项空间结构的参数，并赋值于rcHeightField geom.solid.
+	// 为geom.solid.spans分配了width*height*sizeof(rcSpan*)的空间(其实就是width*height*4)，并从geom传入了前6项空间结构的参数，并赋值于rcHeightField geom.solid.
 	if (!rcCreateHeightfield(m_ctx, *m_solid, m_cfg.width, m_cfg.height, m_cfg.bmin, m_cfg.bmax, m_cfg.cs, m_cfg.ch))
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not create solid heightfield.");
@@ -470,6 +473,7 @@ bool Sample_SoloMesh::handleBuild()
 	
 	//
 	// Step 3. Filter walkables surfaces.
+	// 步骤三：滤除不可走表面.
 	//
 	
 	// Once all geoemtry is rasterized, we do initial pass of filtering to
@@ -485,6 +489,7 @@ bool Sample_SoloMesh::handleBuild()
 
 	//
 	// Step 4. Partition walkable surface to simple regions.
+	// 步骤四：将可行走表面转换成简单的区域（span表面->开放高度场->划分区域）
 	//
 
 	// Compact the heightfield so that it is faster to handle from now on.

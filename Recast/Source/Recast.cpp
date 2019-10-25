@@ -422,7 +422,7 @@ bool rcBuildCompactHeightfield(rcContext* ctx, const int walkableHeight, const i
 	
 	const int w = hf.width;
 	const int h = hf.height;
-	const int spanCount = rcGetHeightFieldSpanCount(ctx, hf);
+	const int spanCount = rcGetHeightFieldSpanCount(ctx, hf);  // 这里只统计能行走的span
 
 	// Fill in header.
 	chf.width = w;
@@ -436,6 +436,8 @@ bool rcBuildCompactHeightfield(rcContext* ctx, const int walkableHeight, const i
 	chf.bmax[1] += walkableHeight*hf.ch;
 	chf.cs = hf.cs;
 	chf.ch = hf.ch;
+
+	// 下面各种申请空间.
 	chf.cells = (rcCompactCell*)rcAlloc(sizeof(rcCompactCell)*w*h, RC_ALLOC_PERM);
 	if (!chf.cells)
 	{
@@ -461,6 +463,7 @@ bool rcBuildCompactHeightfield(rcContext* ctx, const int walkableHeight, const i
 	const int MAX_HEIGHT = 0xffff;
 	
 	// Fill in cells and spans.
+	// 填充开放空间场
 	int idx = 0;
 	for (int y = 0; y < h; ++y)
 	{
@@ -521,13 +524,13 @@ bool rcBuildCompactHeightfield(rcContext* ctx, const int walkableHeight, const i
 
 						// Check that the gap between the spans is walkable,
 						// and that the climb height between the gaps is not too high.
-						if ((top - bot) >= walkableHeight && rcAbs((int)ns.y - (int)s.y) <= walkableClimb)
+						if ((top - bot) >= walkableHeight && rcAbs((int)ns.y - (int)s.y) <= walkableClimb)  // 可联通判断
 						{
 							// Mark direction as walkable.
 							const int lidx = k - (int)nc.index;
 							if (lidx < 0 || lidx > MAX_LAYERS)
 							{
-								tooHighNeighbour = rcMax(tooHighNeighbour, lidx);
+								tooHighNeighbour = rcMax(tooHighNeighbour, lidx);   // 记录与领域可联通的最大本列偏移span(超过MAX_LAYERS在后面会报错，因为导致联通关系记录不正确了)
 								continue;
 							}
 							rcSetCon(s, dir, lidx);

@@ -128,8 +128,8 @@ void rcFilterLedgeSpans(rcContext* ctx, const int walkableHeight, const int walk
 					int nbot = -walkableClimb;
 					int ntop = ns ? (int)ns->smin : MAX_HEIGHT;
 					// Skip neightbour if the gap between the spans is too small.
-					if (rcMin(top,ntop) - rcMax(bot,nbot) > walkableHeight)
-						minh = rcMin(minh, nbot - bot);
+					if (rcMin(top,ntop) - rcMax(bot,nbot) > walkableHeight)   // 若当前span上边面连隔壁的最低上表面都够不着的话，直接宣布没戏了.
+						minh = rcMin(minh, nbot - bot);                       // minh 已经小于了-walkableClimb， 后面怎么都没戏了.
 					
 					// Rest of the spans.
 					for (ns = solid.spans[dx + dy*w]; ns; ns = ns->next)
@@ -137,12 +137,12 @@ void rcFilterLedgeSpans(rcContext* ctx, const int walkableHeight, const int walk
 						nbot = (int)ns->smax;
 						ntop = ns->next ? (int)ns->next->smin : MAX_HEIGHT;
 						// Skip neightbour if the gap between the spans is too small.
-						if (rcMin(top,ntop) - rcMax(bot,nbot) > walkableHeight)
+						if (rcMin(top,ntop) - rcMax(bot,nbot) > walkableHeight)   // 判断当前span上表面是否可以走到隔壁去(前提是不碰头.)
 						{
-							minh = rcMin(minh, nbot - bot);
+							minh = rcMin(minh, nbot - bot);                      // 计算相邻行走表面的高度差
 						
 							// Find min/max accessible neighbour height. 
-							if (rcAbs(nbot - bot) <= walkableClimb)
+							if (rcAbs(nbot - bot) <= walkableClimb)              // 不碰头的前提下记录一下隔壁可走的最大最小高度.
 							{
 								if (nbot < asmin) asmin = nbot;
 								if (nbot > asmax) asmax = nbot;
@@ -154,14 +154,15 @@ void rcFilterLedgeSpans(rcContext* ctx, const int walkableHeight, const int walk
 				
 				// The current span is close to a ledge if the drop to any
 				// neighbour span is less than the walkableClimb.
-				if (minh < -walkableClimb)
+				if (minh < -walkableClimb)   // minh 记录的是当前span上表面跟四领域顶部的最小高度差
 				{
 					s->area = RC_NULL_AREA;
 				}
 				// If the difference between all neighbours is too large,
 				// we are at steep slope, mark the span as ledge.
-				else if ((asmax - asmin) > walkableClimb)
+				else if ((asmax - asmin) > walkableClimb)  // amax,amin分别记录的是与当前span上面满足可穿行条件下的相邻最大、最小表面.
 				{
+					// 相邻可走表面高度差过大，认为坡度太陡，标记成不可走
 					s->area = RC_NULL_AREA;
 				}
 			}
@@ -177,6 +178,7 @@ void rcFilterLedgeSpans(rcContext* ctx, const int walkableHeight, const int walk
 /// @see rcHeightfield, rcConfig
 void rcFilterWalkableLowHeightSpans(rcContext* ctx, int walkableHeight, rcHeightfield& solid)
 {
+	// 这个非常简单，上下span不能碰头. 感觉此步多余，除非是单独使用.
 	rcAssert(ctx);
 	
 	rcScopedTimer timer(ctx, RC_TIMER_FILTER_WALKABLE);

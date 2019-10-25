@@ -354,6 +354,11 @@ struct rcCompactHeightfield
 	rcCompactSpan* spans;		///< Array of spans. [Size: #spanCount]
 	unsigned short* dist;		///< Array containing border distance data. [Size: #spanCount]
 	unsigned char* areas;		///< Array containing area id data. [Size: #spanCount]
+
+	// rcCompactCell包含一个索引数和count，cells[x][z]的含义为坐标xz上第一个span在chf.spans的索引号，以及span的个数count。回看chf会发现，spans存储了一个一维的rcCompactSpan数组，cells则存储了width*height个rcCompactCell。
+	// 所以对于xz，c = cells[x][z]，则xz上第一个span 为 chf.spans[c.index]，最后一个为chf.spans[c.index + c.count]。
+	// 在后面过程中，当前cell[x][z]以变量c出现，相邻cell[nx][nz]以nc出现。
+	// 仔细还会发现，rcSpan的area信息也不见了。因为在rcCompactHeightFiled中，不可行走的span并不会生成开放空间rcCompactSpan。而可行走的span，其area信息保存在了chf.areas中。
 };
 
 /// Represents a heightfield layer within a layer set.
@@ -1066,11 +1071,12 @@ bool rcBuildRegionsMonotone(rcContext* ctx, rcCompactHeightfield& chf,
 							const int borderSize, const int minRegionArea, const int mergeRegionArea);
 
 /// Sets the neighbor connection data for the specified direction.
-///  @param[in]		s		The span to update.
-///  @param[in]		dir		The direction to set. [Limits: 0 <= value < 4]
-///  @param[in]		i		The index of the neighbor span.
+///  @param[in]		s		The span to update.  当前span
+///  @param[in]		dir		The direction to set. [Limits: 0 <= value < 4]  相邻的方向
+///  @param[in]		i		The index of the neighbor span. 相邻grid中的第几个span
 inline void rcSetCon(rcCompactSpan& s, int dir, int i)
 {
+	// 记录联通关系
 	const unsigned int shift = (unsigned int)dir*6;
 	unsigned int con = s.con;
 	s.con = (con & ~(0x3f << shift)) | (((unsigned int)i & 0x3f) << shift);

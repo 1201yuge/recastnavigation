@@ -48,7 +48,7 @@ static rcSpan* allocSpan(rcHeightfield& hf)
 	{
 		// Create new page.
 		// Allocate memory for the new pool.
-		rcSpanPool* pool = (rcSpanPool*)rcAlloc(sizeof(rcSpanPool), RC_ALLOC_PERM);
+		rcSpanPool* pool = (rcSpanPool*)rcAlloc(sizeof(rcSpanPool), RC_ALLOC_PERM);  // 每次不足都一次性分配一段空间
 		if (!pool) return 0;
 
 		// Add the pool into the list of pools.
@@ -68,6 +68,7 @@ static rcSpan* allocSpan(rcHeightfield& hf)
 		hf.freelist = it;
 	}
 	
+	// 返回一个空的rcSpan空间.
 	// Pop item from in front of the free list.
 	rcSpan* it = hf.freelist;
 	hf.freelist = hf.freelist->next;
@@ -76,6 +77,7 @@ static rcSpan* allocSpan(rcHeightfield& hf)
 
 static void freeSpan(rcHeightfield& hf, rcSpan* ptr)
 {
+	// 将释放出来的空间再装到freelist中
 	if (!ptr) return;
 	// Add the node in front of the free list.
 	ptr->next = hf.freelist;
