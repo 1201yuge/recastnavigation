@@ -26,9 +26,9 @@
 
 struct rcEdge
 {
-	unsigned short vert[2];
-	unsigned short polyEdge[2];
-	unsigned short poly[2];
+	unsigned short vert[2];         // 
+	unsigned short polyEdge[2];     // 两个poly连接边各自的起始边序号
+	unsigned short poly[2];         // 该边连接的两个poly序号
 };
 
 static bool buildMeshAdjacency(unsigned short* polys, const int npolys,
@@ -104,13 +104,15 @@ static bool buildMeshAdjacency(unsigned short* polys, const int npolys,
 	}
 	
 	// Store adjacency
+	// 这里使用了poly的后nvp(maxVertsPerPoly)空间，来存储连通信息。
+	// 对于一个多边形poly的第i个顶点，其顶点索引为poly[i]，其实际坐标为mesh.verts[poly[i]]，其连通的npoly为polys[nvp + i]。代表当前poly的边（i，i + 1）连通于npoly。
 	for (int i = 0; i < edgeCount; ++i)
 	{
 		const rcEdge& e = edges[i];
-		if (e.poly[0] != e.poly[1])
+		if (e.poly[0] != e.poly[1])  // 两边的poly不同
 		{
-			unsigned short* p0 = &polys[e.poly[0]*vertsPerPoly*2];
-			unsigned short* p1 = &polys[e.poly[1]*vertsPerPoly*2];
+			unsigned short* p0 = &polys[e.poly[0]*vertsPerPoly*2];  // poly0
+			unsigned short* p1 = &polys[e.poly[1]*vertsPerPoly*2];  // poly1
 			p0[vertsPerPoly + e.polyEdge[0]] = e.poly[1];
 			p1[vertsPerPoly + e.polyEdge[1]] = e.poly[0];
 		}
@@ -137,6 +139,8 @@ inline int computeVertexHash(int x, int y, int z)
 static unsigned short addVertex(unsigned short x, unsigned short y, unsigned short z,
 								unsigned short* verts, int* firstVert, int* nextVert, int& nv)
 {
+	// addVert使用了一个hash表firstVert 和 nextVert，这两个都是临时数据。当添加一个顶点时，会先尝试查找在当前grid(x,y)下的一个y值差不大于2的顶点，
+	// 找到则返回这个顶点的索引。如果找不到，才将这个顶点添加到mesh.verts当中，并返回新的索引。
 	int bucket = computeVertexHash(x, 0, z);
 	int i = firstVert[bucket];
 	
@@ -286,6 +290,8 @@ static bool	inCone(int i, int j, int n, const int* verts, int* indices)
 // diagonal of P.
 static bool diagonal(int i, int j, int n, const int* verts, int* indices)
 {
+	// inCone是判断新的边是否在多边形内，对应条件1。
+	// diagonalie则判断是否和其他边相交，对应条件2。
 	return inCone(i, j, n, verts, indices) && diagonalie(i, j, n, verts, indices);
 }
 
@@ -338,6 +344,7 @@ static bool diagonalLoose(int i, int j, int n, const int* verts, int* indices)
 
 static int triangulate(int n, const int* verts, int* indices, int* tris)
 {
+	// 将轮廓转换成三角形
 	int ntris = 0;
 	int* dst = tris;
 	
@@ -346,12 +353,13 @@ static int triangulate(int n, const int* verts, int* indices, int* tris)
 	{
 		int i1 = next(i, n);
 		int i2 = next(i1, n);
-		if (diagonal(i, i2, n, verts, indices))
+		if (diagonal(i, i2, n, verts, indices)) // 检查i,i2是否有能形成三角形的有效边
 			indices[i1] |= 0x80000000;
 	}
 	
 	while (n > 3)
 	{
+		// 寻找最短边，其第一个顶点索引为mini 
 		int minLen = -1;
 		int mini = -1;
 		for (int i = 0; i < n; i++)
@@ -389,7 +397,7 @@ static int triangulate(int n, const int* verts, int* indices, int* tris)
 			for (int i = 0; i < n; i++)
 			{
 				int i1 = next(i, n);
-				int i2 = next(i1, n);
+				int i2 = next(i1, n);  
 				if (diagonalLoose(i, i2, n, verts, indices))
 				{
 					const int* p0 = &verts[(indices[i] & 0x0fffffff) * 4];
@@ -417,6 +425,7 @@ static int triangulate(int n, const int* verts, int* indices, int* tris)
 		int i1 = next(i, n);
 		int i2 = next(i1, n);
 		
+		// 添加到三角形中  
 		*dst++ = indices[i] & 0x0fffffff;
 		*dst++ = indices[i1] & 0x0fffffff;
 		*dst++ = indices[i2] & 0x0fffffff;
@@ -425,10 +434,10 @@ static int triangulate(int n, const int* verts, int* indices, int* tris)
 		// Removes P[i1] by copying P[i+1]...P[n-1] left one index.
 		n--;
 		for (int k = i1; k < n; k++)
-			indices[k] = indices[k+1];
+			indices[k] = indices[k+1];    // 由于i+1被移除，这里i1变量代表的索引值已指向原i+2顶点
 		
 		if (i1 >= n) i1 = 0;
-		i = prev(i1,n);
+		i = prev(i1,n);                  // i的索引也要更新，以防mini正好是第n个点的时候
 		// Update diagonal flags.
 		if (diagonal(prev(i, n), i1, n, verts, indices))
 			indices[i] |= 0x80000000;
@@ -442,6 +451,7 @@ static int triangulate(int n, const int* verts, int* indices, int* tris)
 	}
 	
 	// Append the remaining triangle.
+	// 当循环完毕时，也就是n = 3，将最后三个点也添加进来，这是最后一个三角形。
 	*dst++ = indices[0] & 0x0fffffff;
 	*dst++ = indices[1] & 0x0fffffff;
 	*dst++ = indices[2] & 0x0fffffff;
@@ -479,20 +489,23 @@ static int getPolyMergeValue(unsigned short* pa, unsigned short* pb,
 	ea = -1;
 	eb = -1;
 	
-	for (int i = 0; i < na; ++i)
+	for (int i = 0; i < na; ++i)   // i遍历pa所有边
 	{
 		unsigned short va0 = pa[i];
 		unsigned short va1 = pa[(i+1) % na];
 		if (va0 > va1)
 			rcSwap(va0, va1);
-		for (int j = 0; j < nb; ++j)
+		for (int j = 0; j < nb; ++j)   // j 遍历pb所有边
 		{
 			unsigned short vb0 = pb[j];
 			unsigned short vb1 = pb[(j+1) % nb];
 			if (vb0 > vb1)
-				rcSwap(vb0, vb1);
+				rcSwap(vb0, vb1);    // // 顶点索引一样
 			if (va0 == vb0 && va1 == vb1)
 			{
+				// 虽然poly之间没有顺序，但每个poly内部顶点仍然是以顺时针排列。
+				// 所以隐藏的约束决定了j先遍历到另一个点。
+				// 也就是ea和eb+1是同一个点，ea+1和eb是同一个点。ea，ea+1和eb，eb+1是相同却反向的边。
 				ea = i;
 				eb = j;
 				break;
@@ -507,6 +520,7 @@ static int getPolyMergeValue(unsigned short* pa, unsigned short* pb,
 	// Check to see if the merged polygon would be convex.
 	unsigned short va, vb, vc;
 	
+	// 如何判断这两个多边形合并之后是否是凸多边形呢？在原来两个多边形已经是凸多边形的基础上，只要检查合并的两个点是不是凸点就可以了。
 	va = pa[(ea+na-1) % na];
 	vb = pa[ea];
 	vc = pb[(eb+2) % nb];
@@ -1028,6 +1042,7 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 	}
 	memset(vflags, 0, maxVertices);
 	
+	// 申请对应的内存空间
 	mesh.verts = (unsigned short*)rcAlloc(sizeof(unsigned short)*maxVertices*3, RC_ALLOC_PERM);
 	if (!mesh.verts)
 	{
@@ -1080,13 +1095,13 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 	for (int i = 0; i < VERTEX_BUCKET_COUNT; ++i)
 		firstVert[i] = -1;
 	
-	rcScopedDelete<int> indices((int*)rcAlloc(sizeof(int)*maxVertsPerCont, RC_ALLOC_TEMP));
+	rcScopedDelete<int> indices((int*)rcAlloc(sizeof(int)*maxVertsPerCont, RC_ALLOC_TEMP)); // 存放当前轮廓的索引
 	if (!indices)
 	{
 		ctx->log(RC_LOG_ERROR, "rcBuildPolyMesh: Out of memory 'indices' (%d).", maxVertsPerCont);
 		return false;
 	}
-	rcScopedDelete<int> tris((int*)rcAlloc(sizeof(int)*maxVertsPerCont*3, RC_ALLOC_TEMP));
+	rcScopedDelete<int> tris((int*)rcAlloc(sizeof(int)*maxVertsPerCont*3, RC_ALLOC_TEMP));   // 存放当前轮廓切割出来的三角形的索引
 	if (!tris)
 	{
 		ctx->log(RC_LOG_ERROR, "rcBuildPolyMesh: Out of memory 'tris' (%d).", maxVertsPerCont*3);
@@ -1144,6 +1159,7 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 		}
 
 		// Build initial polygons.
+		// 接着将三角形添加到一个polys临时变量中
 		int npolys = 0;
 		memset(polys, 0xff, maxVertsPerCont*nvp*sizeof(unsigned short));
 		for (int j = 0; j < ntris; ++j)
@@ -1161,6 +1177,9 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 			continue;
 		
 		// Merge polygons.
+		// 这里nvp = m_cfg.maxVertsPerPoly，为编辑器配置置，默认为6。
+		// maxVertsPerCont = max(cset.conts[i].nverts)是所有轮廓简化顶点数最大值。
+		// 所以polys使用nvp个unsigned short表示一个多边形，暂时每个多边形只有3个顶点。
 		if (nvp > 3)
 		{
 			for(;;)
@@ -1179,17 +1198,20 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 						int v = getPolyMergeValue(pj, pk, mesh.verts, ea, eb, nvp);
 						if (v > bestMergeVal)
 						{
-							bestMergeVal = v;
-							bestPa = j;
-							bestPb = k;
-							bestEa = ea;
-							bestEb = eb;
+							bestMergeVal = v;  // 长度的平方
+							bestPa = j;        // 第一个多边形的编号
+							bestPb = k;        // 第二个多边形的编号
+							bestEa = ea;       // 共享边的第一个顶点是第一个多边形的第ea个顶点
+							bestEb = eb;       // 共享边的第二个顶点是第二个多边形的第eb个顶点
+							// 即共享边为第一个多边形的(pa[ea],pa[(ea+1)%n]）
+							// 也是第二个多边形的(pb[eb],pb[(eb+1)%n])
 						}
 					}
 				}
 				
 				if (bestMergeVal > 0)
 				{
+					// 这里存放到了pa当中，然后最后一个多边形会被复制到pb的空间中。最终npolys--，即移除原pb
 					// Found best, merge.
 					unsigned short* pa = &polys[bestPa*nvp];
 					unsigned short* pb = &polys[bestPb*nvp];
@@ -1260,10 +1282,10 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 	{
 		const int w = cset.width;
 		const int h = cset.height;
-		for (int i = 0; i < mesh.npolys; ++i)
+		for (int i = 0; i < mesh.npolys; ++i)  // 遍历所有poly
 		{
 			unsigned short* p = &mesh.polys[i*2*nvp];
-			for (int j = 0; j < nvp; ++j)
+			for (int j = 0; j < nvp; ++j)     // 遍历每个poly的边
 			{
 				if (p[j] == RC_MESH_NULL_IDX) break;
 				// Skip connected edges.

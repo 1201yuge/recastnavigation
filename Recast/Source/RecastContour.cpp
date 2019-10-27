@@ -32,12 +32,13 @@ static int getCornerHeight(int x, int y, int i, int dir,
 {
 	const rcCompactSpan& s = chf.spans[i];
 	int ch = (int)s.y;
-	int dirp = (dir+1) & 0x3;
+	int dirp = (dir+1) & 0x3; // 顺时针90度
 	
 	unsigned int regs[4] = {0,0,0,0};
 	
 	// Combine region and area codes in order to prevent
 	// border vertices which are in between two areas to be removed.
+	// 合并区域和区域代码，以防止删除位于两个区域之间的边界顶点。
 	regs[0] = chf.spans[i].reg | (chf.areas[i] << 16);
 	
 	if (rcGetCon(s, dir) != RC_NOT_CONNECTED)
@@ -105,9 +106,11 @@ static void walkContour(int x, int y, int i,
 						rcCompactHeightfield& chf,
 						unsigned char* flags, rcIntArray& points)
 {
+	// 寻找区域边界.
+
 	// Choose the first non-connected edge
 	unsigned char dir = 0;
-	while ((flags[i] & (1 << dir)) == 0)
+	while ((flags[i] & (1 << dir)) == 0) // flag最后4bit代表四个方向，为1表示与其他region相邻
 		dir++;
 	
 	unsigned char startDir = dir;
@@ -121,12 +124,12 @@ static void walkContour(int x, int y, int i,
 		if (flags[i] & (1 << dir))
 		{
 			// Choose the edge corner
-			bool isBorderVertex = false;
-			bool isAreaBorder = false;
+			bool isBorderVertex = false;    // 是否为边界顶点
+			bool isAreaBorder = false;      // 是否为区域边界
 			int px = x;
 			int py = getCornerHeight(x, y, i, dir, chf, isBorderVertex);
 			int pz = y;
-			switch(dir)
+			switch(dir)  // 求出来的边界，整体往右上角(+1,+1)方向偏了一格
 			{
 				case 0: pz++; break;
 				case 1: px++; pz++; break;
@@ -852,7 +855,7 @@ bool rcBuildContours(rcContext* ctx, rcCompactHeightfield& chf,
 	cset.maxError = maxError;
 	
 	int maxContours = rcMax((int)chf.maxRegions, 8);
-	cset.conts = (rcContour*)rcAlloc(sizeof(rcContour)*maxContours, RC_ALLOC_PERM);
+	cset.conts = (rcContour*)rcAlloc(sizeof(rcContour)*maxContours, RC_ALLOC_PERM);  // 根据区域数量申请轮廓内存
 	if (!cset.conts)
 		return false;
 	cset.nconts = 0;
@@ -867,6 +870,7 @@ bool rcBuildContours(rcContext* ctx, rcCompactHeightfield& chf,
 	ctx->startTimer(RC_TIMER_BUILD_CONTOURS_TRACE);
 	
 	// Mark boundaries.
+	// 遍历所有的span并标记是否为边界
 	for (int y = 0; y < h; ++y)
 	{
 		for (int x = 0; x < w; ++x)
@@ -876,7 +880,7 @@ bool rcBuildContours(rcContext* ctx, rcCompactHeightfield& chf,
 			{
 				unsigned char res = 0;
 				const rcCompactSpan& s = chf.spans[i];
-				if (!chf.spans[i].reg || (chf.spans[i].reg & RC_BORDER_REG))
+				if (!chf.spans[i].reg || (chf.spans[i].reg & RC_BORDER_REG))  // 没有区域的span
 				{
 					flags[i] = 0;
 					continue;
@@ -891,10 +895,10 @@ bool rcBuildContours(rcContext* ctx, rcCompactHeightfield& chf,
 						const int ai = (int)chf.cells[ax+ay*w].index + rcGetCon(s, dir);
 						r = chf.spans[ai].reg;
 					}
-					if (r == chf.spans[i].reg)
+					if (r == chf.spans[i].reg)   // 这里要结合flags[i] = res ^ 0xf；看
 						res |= (1 << dir);
 				}
-				flags[i] = res ^ 0xf; // Inverse, mark non connected edges.
+				flags[i] = res ^ 0xf; // Inverse, mark non connected edges.  标记出每个span相邻的region方向.最后4bit代表四个方向，为1表示与其他region相邻
 			}
 		}
 	}
@@ -911,13 +915,13 @@ bool rcBuildContours(rcContext* ctx, rcCompactHeightfield& chf,
 			const rcCompactCell& c = chf.cells[x+y*w];
 			for (int i = (int)c.index, ni = (int)(c.index+c.count); i < ni; ++i)
 			{
-				if (flags[i] == 0 || flags[i] == 0xf)
+				if (flags[i] == 0 || flags[i] == 0xf)  // 滤除极端情况
 				{
 					flags[i] = 0;
 					continue;
 				}
 				const unsigned short reg = chf.spans[i].reg;
-				if (!reg || (reg & RC_BORDER_REG))
+				if (!reg || (reg & RC_BORDER_REG))    // 滤除没用的region
 					continue;
 				const unsigned char area = chf.areas[i];
 				
@@ -925,12 +929,12 @@ bool rcBuildContours(rcContext* ctx, rcCompactHeightfield& chf,
 				simplified.resize(0);
 				
 				ctx->startTimer(RC_TIMER_BUILD_CONTOURS_TRACE);
-				walkContour(x, y, i, chf, flags, verts);
+				walkContour(x, y, i, chf, flags, verts);   // 获取轮廓的三维边界
 				ctx->stopTimer(RC_TIMER_BUILD_CONTOURS_TRACE);
 				
 				ctx->startTimer(RC_TIMER_BUILD_CONTOURS_SIMPLIFY);
-				simplifyContour(verts, simplified, maxError, maxEdgeLen, buildFlags);
-				removeDegenerateSegments(simplified);
+				simplifyContour(verts, simplified, maxError, maxEdgeLen, buildFlags);  // 简化边界
+				removeDegenerateSegments(simplified);            // 移除一条线上多余的顶点
 				ctx->stopTimer(RC_TIMER_BUILD_CONTOURS_SIMPLIFY);
 				
 				

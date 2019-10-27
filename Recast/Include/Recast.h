@@ -443,6 +443,10 @@ struct rcPolyMesh
 	float ch;				///< The height of each cell. (The minimum increment along the y-axis.)
 	int borderSize;			///< The AABB border size used to generate the source data from which the mesh was derived.
 	float maxEdgeError;		///< The max error of the polygon edges in the mesh.
+
+	// 可以看到，对于每一个rcContour，其顶点和顶点索引poly被平行添加到rcPolyMesh mesh的mesh.verts和mesh.polys当中。
+	// 注意在mesh.poly中，每个poly不再占用nvp数据，而是占用nvp * 2。其中前nvp从计算的poly中复制过来，代表多边形的顶点索引，后nvp将被用来存放连通信息。
+	// mesh.regs和mesh.area保留了最初来自region的可行走标记area和regionId。rcPolyMesh不再有region的结构，而是一整个模型。包含顶点和索引数据。
 };
 
 /// Contains triangle meshes that represent detailed height data associated 

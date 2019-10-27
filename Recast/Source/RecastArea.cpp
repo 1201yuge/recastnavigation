@@ -44,6 +44,7 @@ bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 	
 	rcScopedTimer timer(ctx, RC_TIMER_ERODE_AREA);
 	
+	// 为每个span的边缘距离申请内存
 	unsigned char* dist = (unsigned char*)rcAlloc(sizeof(unsigned char)*chf.spanCount, RC_ALLOC_TEMP);
 	if (!dist)
 	{
@@ -54,13 +55,13 @@ bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 	// Init distance.
 	memset(dist, 0xff, sizeof(unsigned char)*chf.spanCount);
 	
-	// Mark boundary cells.
+	// Mark boundary cells.  标记边缘的span(即四邻域有任何一个span不可走，则当前span即为边缘)
 	for (int y = 0; y < h; ++y)
 	{
 		for (int x = 0; x < w; ++x)
 		{
 			const rcCompactCell& c = chf.cells[x+y*w];
-			for (int i = (int)c.index, ni = (int)(c.index+c.count); i < ni; ++i)
+			for (int i = (int)c.index, ni = (int)(c.index+c.count); i < ni; ++i) // grid(x,y)上的span.
 			{
 				if (chf.areas[i] == RC_NULL_AREA)
 				{
@@ -83,7 +84,7 @@ bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 							}
 						}
 					}
-					// At least one missing neighbour.
+					// At least one missing neighbour. 
 					if (nc != 4)
 						dist[i] = 0;
 				}
@@ -94,38 +95,39 @@ bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 	unsigned char nd;
 	
 	// Pass 1
+	// 从左下往右上遍历，求得每个span左、左下、下、右下四个方向的最优dist值。
 	for (int y = 0; y < h; ++y)
 	{
 		for (int x = 0; x < w; ++x)
 		{
 			const rcCompactCell& c = chf.cells[x+y*w];
-			for (int i = (int)c.index, ni = (int)(c.index+c.count); i < ni; ++i)
+			for (int i = (int)c.index, ni = (int)(c.index+c.count); i < ni; ++i) // grid(x,y)上的span.
 			{
 				const rcCompactSpan& s = chf.spans[i];
 				
-				if (rcGetCon(s, 0) != RC_NOT_CONNECTED)
+				if (rcGetCon(s, 0) != RC_NOT_CONNECTED)  // 计算span左边的最优dist值
 				{
 					// (-1,0)
 					const int ax = x + rcGetDirOffsetX(0);
 					const int ay = y + rcGetDirOffsetY(0);
 					const int ai = (int)chf.cells[ax+ay*w].index + rcGetCon(s, 0);
-					const rcCompactSpan& as = chf.spans[ai];
-					nd = (unsigned char)rcMin((int)dist[ai]+2, 255);
+					const rcCompactSpan& as = chf.spans[ai];    // 左边连接的span
+					nd = (unsigned char)rcMin((int)dist[ai]+2, 255);     // 从左边过来的最优dist值
 					if (nd < dist[i])
 						dist[i] = nd;
 					
 					// (-1,-1)
-					if (rcGetCon(as, 3) != RC_NOT_CONNECTED)
+					if (rcGetCon(as, 3) != RC_NOT_CONNECTED)    // 判断能否从左下角过来
 					{
 						const int aax = ax + rcGetDirOffsetX(3);
 						const int aay = ay + rcGetDirOffsetY(3);
 						const int aai = (int)chf.cells[aax+aay*w].index + rcGetCon(as, 3);
-						nd = (unsigned char)rcMin((int)dist[aai]+3, 255);
+						nd = (unsigned char)rcMin((int)dist[aai]+3, 255); // 从左下边过来的最优dist值
 						if (nd < dist[i])
 							dist[i] = nd;
 					}
 				}
-				if (rcGetCon(s, 3) != RC_NOT_CONNECTED)
+				if (rcGetCon(s, 3) != RC_NOT_CONNECTED)      // 判断能否从下边过来
 				{
 					// (0,-1)
 					const int ax = x + rcGetDirOffsetX(3);
@@ -137,7 +139,7 @@ bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 						dist[i] = nd;
 					
 					// (1,-1)
-					if (rcGetCon(as, 2) != RC_NOT_CONNECTED)
+					if (rcGetCon(as, 2) != RC_NOT_CONNECTED) // 判断能否从右下过来
 					{
 						const int aax = ax + rcGetDirOffsetX(2);
 						const int aay = ay + rcGetDirOffsetY(2);
@@ -152,6 +154,7 @@ bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 	}
 	
 	// Pass 2
+	// 从右上往左下遍历，求得每个span右、右上、上、左上四个方向的最优dist值。
 	for (int y = h-1; y >= 0; --y)
 	{
 		for (int x = w-1; x >= 0; --x)
@@ -209,11 +212,13 @@ bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 		}
 	}
 	
+	// 距离小于人物直径的区域滤除掉
 	const unsigned char thr = (unsigned char)(radius*2);
 	for (int i = 0; i < chf.spanCount; ++i)
 		if (dist[i] < thr)
 			chf.areas[i] = RC_NULL_AREA;
 	
+	// 释放掉距离
 	rcFree(dist);
 	
 	return true;

@@ -501,6 +501,7 @@ bool Sample_SoloMesh::handleBuild()
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Out of memory 'chf'.");
 		return false;
 	}
+	// 创建开放高度场
 	if (!rcBuildCompactHeightfield(m_ctx, m_cfg.walkableHeight, m_cfg.walkableClimb, *m_solid, *m_chf))
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not build compact data.");
@@ -514,13 +515,14 @@ bool Sample_SoloMesh::handleBuild()
 	}
 		
 	// Erode the walkable area by agent radius.
+	// 根据人物的直径再度滤除靠近边缘的span
 	if (!rcErodeWalkableArea(m_ctx, m_cfg.walkableRadius, *m_chf))
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not erode.");
 		return false;
 	}
 
-	// (Optional) Mark areas.
+	// (Optional) Mark areas. 获取区域体标志，对，就是标志不同区域(例如水)那个
 	const ConvexVolume* vols = m_geom->getConvexVolumes();
 	for (int i  = 0; i < m_geom->getConvexVolumeCount(); ++i)
 		rcMarkConvexPolyArea(m_ctx, vols[i].verts, vols[i].nverts, vols[i].hmin, vols[i].hmax, (unsigned char)vols[i].area, *m_chf);
@@ -552,9 +554,11 @@ bool Sample_SoloMesh::handleBuild()
 	//     if you have large open areas with small obstacles (not a problem if you use tiles)
 	//   * good choice to use for tiled navmesh with medium and small sized tiles
 	
+	// 分水岭算法
 	if (m_partitionType == SAMPLE_PARTITION_WATERSHED)
 	{
 		// Prepare for region partitioning, by calculating distance field along the walkable surface.
+		// 为后面的分水岭算法计算每个span的到边缘的最近距离
 		if (!rcBuildDistanceField(m_ctx, *m_chf))
 		{
 			m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not build distance field.");
@@ -562,6 +566,7 @@ bool Sample_SoloMesh::handleBuild()
 		}
 		
 		// Partition the walkable surface into simple regions without holes.
+		// 使用分水岭算法分区域
 		if (!rcBuildRegions(m_ctx, *m_chf, 0, m_cfg.minRegionArea, m_cfg.mergeRegionArea))
 		{
 			m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not build watershed regions.");
@@ -593,6 +598,7 @@ bool Sample_SoloMesh::handleBuild()
 	//
 	
 	// Create contours.
+	// 申请存放轮廓的空间.
 	m_cset = rcAllocContourSet();
 	if (!m_cset)
 	{
@@ -610,6 +616,7 @@ bool Sample_SoloMesh::handleBuild()
 	//
 	
 	// Build polygon navmesh from the contours.
+	// 分配rcPolyMesh对象
 	m_pmesh = rcAllocPolyMesh();
 	if (!m_pmesh)
 	{
