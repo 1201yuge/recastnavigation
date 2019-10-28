@@ -1127,6 +1127,7 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 		for (int j = 0; j < cont.nverts; ++j)
 			indices[j] = j;
 			
+		// triangulate函数返回了三角形的个数ntris，而三角形的索引在tris变量中
 		int ntris = triangulate(cont.nverts, cont.verts, &indices[0], &tris[0]);
 		if (ntris <= 0)
 		{
@@ -1148,6 +1149,8 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 		// Add and merge vertices.
 		for (int j = 0; j < cont.nverts; ++j)
 		{
+			// addVert使用了一个hash表firstVert 和 nextVert，这两个都是临时数据。当添加一个顶点时，会先尝试查找一个y值差不大于2的顶点，
+			// 找到则返回这个顶点的索引。如果找不到，才将这个顶点添加到mesh.verts当中，并返回新的索引。
 			const int* v = &cont.verts[j*4];
 			indices[j] = addVertex((unsigned short)v[0], (unsigned short)v[1], (unsigned short)v[2],
 								   mesh.verts, firstVert, nextVert, mesh.nverts);

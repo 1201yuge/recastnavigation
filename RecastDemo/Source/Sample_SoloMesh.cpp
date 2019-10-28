@@ -566,7 +566,7 @@ bool Sample_SoloMesh::handleBuild()
 		}
 		
 		// Partition the walkable surface into simple regions without holes.
-		// 使用分水岭算法分区域
+		// 使用分水岭算法分区域，结果更新到每个m_chf->spans中.
 		if (!rcBuildRegions(m_ctx, *m_chf, 0, m_cfg.minRegionArea, m_cfg.mergeRegionArea))
 		{
 			m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not build watershed regions.");
@@ -605,6 +605,7 @@ bool Sample_SoloMesh::handleBuild()
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Out of memory 'cset'.");
 		return false;
 	}
+	// 生成轮廓并简化轮廓.
 	if (!rcBuildContours(m_ctx, *m_chf, m_cfg.maxSimplificationError, m_cfg.maxEdgeLen, *m_cset))
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not create contours.");
