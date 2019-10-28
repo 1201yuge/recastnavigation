@@ -26,7 +26,7 @@
 
 struct rcEdge
 {
-	unsigned short vert[2];         // 
+	unsigned short vert[2];         // 边的两个顶点索引
 	unsigned short polyEdge[2];     // 两个poly连接边各自的起始边序号
 	unsigned short poly[2];         // 该边连接的两个poly序号
 };
@@ -54,31 +54,33 @@ static bool buildMeshAdjacency(unsigned short* polys, const int npolys,
 	for (int i = 0; i < nverts; i++)
 		firstEdge[i] = RC_MESH_NULL_IDX;
 	
+	// 遍历轮廓
 	for (int i = 0; i < npolys; ++i)
 	{
-		unsigned short* t = &polys[i*vertsPerPoly*2];
+		unsigned short* t = &polys[i*vertsPerPoly*2];  // 遍历轮廓顶点索引 
 		for (int j = 0; j < vertsPerPoly; ++j)
 		{
-			if (t[j] == RC_MESH_NULL_IDX) break;
+			if (t[j] == RC_MESH_NULL_IDX) break;      // 结束
 			unsigned short v0 = t[j];
-			unsigned short v1 = (j+1 >= vertsPerPoly || t[j+1] == RC_MESH_NULL_IDX) ? t[0] : t[j+1];
-			if (v0 < v1)
+			unsigned short v1 = (j+1 >= vertsPerPoly || t[j+1] == RC_MESH_NULL_IDX) ? t[0] : t[j+1];  // 判断一下是否已经循环
+			if (v0 < v1)  // 遍历每条边
 			{
 				rcEdge& edge = edges[edgeCount];
 				edge.vert[0] = v0;
 				edge.vert[1] = v1;
-				edge.poly[0] = (unsigned short)i;
-				edge.polyEdge[0] = (unsigned short)j;
+				edge.poly[0] = (unsigned short)i;    // 当前多边形序号
+				edge.polyEdge[0] = (unsigned short)j;// 当前多边形的边序号
 				edge.poly[1] = (unsigned short)i;
 				edge.polyEdge[1] = 0;
 				// Insert edge
-				nextEdge[edgeCount] = firstEdge[v0];
+				nextEdge[edgeCount] = firstEdge[v0];  // firstEdge和nextEdge维护了从v0出发的边的列表,类似与一个点接了多条边,或者说多个多边形的公共顶点.
 				firstEdge[v0] = (unsigned short)edgeCount;
 				edgeCount++;
 			}
 		}
 	}
 	
+	// 再遍历一遍，找到边的另一面连接的多边形
 	for (int i = 0; i < npolys; ++i)
 	{
 		unsigned short* t = &polys[i*vertsPerPoly*2];
@@ -98,6 +100,7 @@ static bool buildMeshAdjacency(unsigned short* polys, const int npolys,
 						edge.polyEdge[1] = (unsigned short)j;
 						break;
 					}
+
 				}
 			}
 		}
@@ -1127,6 +1130,7 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 		for (int j = 0; j < cont.nverts; ++j)
 			indices[j] = j;
 			
+		// triangulate函数返回了三角形的个数ntris，而三角形的索引在tris变量中
 		int ntris = triangulate(cont.nverts, cont.verts, &indices[0], &tris[0]);
 		if (ntris <= 0)
 		{
@@ -1148,6 +1152,8 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 		// Add and merge vertices.
 		for (int j = 0; j < cont.nverts; ++j)
 		{
+			// addVert使用了一个hash表firstVert 和 nextVert，这两个都是临时数据。当添加一个顶点时，会先尝试查找一个y值差不大于2的顶点，
+			// 找到则返回这个顶点的索引。如果找不到，才将这个顶点添加到mesh.verts当中，并返回新的索引。
 			const int* v = &cont.verts[j*4];
 			indices[j] = addVertex((unsigned short)v[0], (unsigned short)v[1], (unsigned short)v[2],
 								   mesh.verts, firstVert, nextVert, mesh.nverts);

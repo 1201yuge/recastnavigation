@@ -468,7 +468,7 @@ void NavMeshTesterTool::handleMenu()
 void NavMeshTesterTool::handleClick(const float* /*s*/, const float* p, bool shift)
 {
 	if (shift)
-	{
+ 	{
 		m_sposSet = true;
 		dtVcopy(m_spos, p);
 	}

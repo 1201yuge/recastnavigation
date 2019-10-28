@@ -460,6 +460,8 @@ struct rcPolyMeshDetail
 	int nmeshes;			///< The number of sub-meshes defined by #meshes.
 	int nverts;				///< The number of vertices in #verts.
 	int ntris;				///< The number of triangles in #tris.
+
+	// meshes，每个mesh包含4个数据: verts起始index, vert数量, tris起始index, tri数量
 };
 
 /// @name Allocation Functions

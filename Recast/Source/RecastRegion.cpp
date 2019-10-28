@@ -547,8 +547,8 @@ struct rcRegion
 	int spanCount;					// Number of spans belonging to this region
 	unsigned short id;				// ID of the region
 	unsigned char areaType;			// Are type.
-	bool remap;
-	bool visited;
+	bool remap;                     // 在压缩regionID的时候用到
+	bool visited;                   // 再区域merge的时候要用到   
 	bool overlap;                   // 当前region是否存在上下重叠的span
 	bool connectsToBorder;
 	unsigned short ymin, ymax;

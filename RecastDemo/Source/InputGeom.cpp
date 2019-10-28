@@ -553,6 +553,7 @@ void InputGeom::deleteConvexVolume(int i)
 
 void InputGeom::drawConvexVolumes(struct duDebugDraw* dd, bool /*hilight*/)
 {
+	// 绘制区域标志体
 	dd->depthMask(false);
 
 	dd->begin(DU_DRAW_TRIS);
@@ -563,20 +564,20 @@ void InputGeom::drawConvexVolumes(struct duDebugDraw* dd, bool /*hilight*/)
 		unsigned int col = duTransCol(dd->areaToCol(vol->area), 32);
 		for (int j = 0, k = vol->nverts-1; j < vol->nverts; k = j++)
 		{
-			const float* va = &vol->verts[k*3];
-			const float* vb = &vol->verts[j*3];
+			const float* va = &vol->verts[k*3];  // 上一点
+			const float* vb = &vol->verts[j*3];  // 当前点
 
-			dd->vertex(vol->verts[0],vol->hmax,vol->verts[2], col);
-			dd->vertex(vb[0],vol->hmax,vb[2], col);
-			dd->vertex(va[0],vol->hmax,va[2], col);
+			dd->vertex(vol->verts[0],vol->hmax,vol->verts[2], col);  // 第一个点
+			dd->vertex(vb[0],vol->hmax,vb[2], col);  // 上一点的高点
+			dd->vertex(va[0],vol->hmax,va[2], col);  // 当前点的高点
 			
-			dd->vertex(va[0],vol->hmin,va[2], duDarkenCol(col));
-			dd->vertex(va[0],vol->hmax,va[2], col);
-			dd->vertex(vb[0],vol->hmax,vb[2], col);
+			dd->vertex(va[0],vol->hmin,va[2], duDarkenCol(col));  // 当前点的低点
+			dd->vertex(va[0],vol->hmax,va[2], col); // 点观前店的高点
+			dd->vertex(vb[0],vol->hmax,vb[2], col); // 上一点的高点
 
-			dd->vertex(va[0],vol->hmin,va[2], duDarkenCol(col));
-			dd->vertex(vb[0],vol->hmax,vb[2], col);
-			dd->vertex(vb[0],vol->hmin,vb[2], duDarkenCol(col));
+			dd->vertex(va[0],vol->hmin,va[2], duDarkenCol(col));   // 当前点的低点
+			dd->vertex(vb[0],vol->hmax,vb[2], col); // 上一点的高点
+			dd->vertex(vb[0],vol->hmin,vb[2], duDarkenCol(col));   // 上一点的低点
 		}
 	}
 	
