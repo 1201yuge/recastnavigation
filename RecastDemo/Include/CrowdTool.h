@@ -63,9 +63,10 @@ class CrowdToolState : public SampleToolState
 	float m_targetPos[3];
 	dtPolyRef m_targetRef;
 
-	dtCrowdAgentDebugInfo m_agentDebug;
-	dtObstacleAvoidanceDebugData* m_vod;
+	dtCrowdAgentDebugInfo m_agentDebug;  // 单选中的Agnet
+	dtObstacleAvoidanceDebugData* m_vod; // 障碍物防撞调试
 	
+	// 记录Agent们运动的轨迹
 	static const int AGENT_MAX_TRAIL = 64;
 	static const int MAX_AGENTS = 128;
 	struct AgentTrail
@@ -111,20 +112,21 @@ private:
 	CrowdToolState& operator=(const CrowdToolState&);
 };
 
-
+// crowd工具类
 class CrowdTool : public SampleTool
 {
-	Sample* m_sample;
-	CrowdToolState* m_state;
+	Sample* m_sample;        // 指向当前的sample类型，如:Sample_SoloMesh
+	CrowdToolState* m_state; // crowd工具状态类，用于记录相关crowd状态
 	
+	// 工具类型
 	enum ToolMode
 	{
-		TOOLMODE_CREATE,
-		TOOLMODE_MOVE_TARGET,
-		TOOLMODE_SELECT,
-		TOOLMODE_TOGGLE_POLYS,
+		TOOLMODE_CREATE,      // 创建Agent
+		TOOLMODE_MOVE_TARGET, // 设置Agent目标
+		TOOLMODE_SELECT,      // 选择Agent
+		TOOLMODE_TOGGLE_POLYS,// 反转Polys
 	};
-	ToolMode m_mode;
+	ToolMode m_mode;         
 	
 public:
 	CrowdTool();

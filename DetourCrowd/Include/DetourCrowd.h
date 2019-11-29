@@ -184,9 +184,9 @@ struct dtCrowdAgentAnimation
 /// @see dtCrowdAgentParams::updateFlags
 enum UpdateFlags
 {
-	DT_CROWD_ANTICIPATE_TURNS = 1,
-	DT_CROWD_OBSTACLE_AVOIDANCE = 2,
-	DT_CROWD_SEPARATION = 4,
+	DT_CROWD_ANTICIPATE_TURNS = 1,      /// 优化转弯
+	DT_CROWD_OBSTACLE_AVOIDANCE = 2,    /// 防撞 
+	DT_CROWD_SEPARATION = 4,            /// 分散系数
 	DT_CROWD_OPTIMIZE_VIS = 8,			///< Use #dtPathCorridor::optimizePathVisibility() to optimize the agent path.
 	DT_CROWD_OPTIMIZE_TOPO = 16,		///< Use dtPathCorridor::optimizePathTopology() to optimize the agent path.
 };
@@ -202,9 +202,9 @@ struct dtCrowdAgentDebugInfo
 /// @ingroup crowd
 class dtCrowd
 {
-	int m_maxAgents;
-	dtCrowdAgent* m_agents;
-	dtCrowdAgent** m_activeAgents;
+	int m_maxAgents;               // 最大Agents数量
+	dtCrowdAgent* m_agents;        // 所有的Agents
+	dtCrowdAgent** m_activeAgents; // 激活状态下的Agents
 	dtCrowdAgentAnimation* m_agentAnims;
 	
 	dtPathQueue m_pathq;

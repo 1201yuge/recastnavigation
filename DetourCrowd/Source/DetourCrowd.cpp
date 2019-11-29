@@ -1051,7 +1051,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 	const int debugIdx = debug ? debug->idx : -1;
 	
 	dtCrowdAgent** agents = m_activeAgents;
-	int nagents = getActiveAgents(agents, m_maxAgents);
+	int nagents = getActiveAgents(agents, m_maxAgents);   // 获取激活状态下的Agent
 
 	// Check that all agents still have valid paths.
 	checkPathValidity(agents, nagents, dt);
